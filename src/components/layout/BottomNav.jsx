@@ -38,19 +38,20 @@ const BottomNav = ({ activeTab, setActiveTab, setSelectedEvent }) => {
     };
 
     return (
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40">
-            <div className="flex justify-around">
-                {getNavItems().map(item => (
-                    <button
-                        key={item.id}
-                        onClick={() => { setActiveTab(item.id); setSelectedEvent(null); }}
-                        className={`flex flex-col items-center py-2 px-2 ${activeTab === item.id ? 'text-indigo-600' : 'text-gray-600'}`}
-                    >
-                        <item.icon size={20} />
-                        <span className="text-xs mt-1">{item.label}</span>
-                    </button>
-                ))}
-            </div>
+        <nav className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[400px] bg-primary-600/50 backdrop-blur-md rounded-full shadow-xl z-50 px-6 py-3 flex justify-between items-center">
+            {getNavItems().map(item => (
+                <button
+                    key={item.id}
+                    onClick={() => { setActiveTab(item.id); setSelectedEvent(null); }}
+                    className={`transition-all duration-200 p-2 rounded-full ${activeTab === item.id
+                        ? 'bg-white/20 text-white shadow-sm'
+                        : 'text-white/70 hover:text-white hover:bg-white/10'
+                        }`}
+                    aria-label={item.label}
+                >
+                    <item.icon size={20} strokeWidth={activeTab === item.id ? 2.5 : 2} />
+                </button>
+            ))}
         </nav>
     );
 };

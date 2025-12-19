@@ -1,5 +1,7 @@
 import { Calendar, CheckSquare, Users, MessageSquare, TrendingUp, Plus, Bell, Search, Menu, X, ChevronRight, Upload, Clock, MapPin, AlertCircle, MoreVertical, Check, XCircle, Camera, Tag, Filter, Star, Phone, Mail, Briefcase, Award, Activity, DollarSign, FileText, BarChart3 } from 'lucide-react';
 
+const TODAY = new Date().toISOString().split('T')[0];
+
 export const MOCK_DATA = {
     currentUser: { id: 'u1', name: 'Priya Sharma', role: 'owner', avatar: 'PS' },
     events: [
@@ -11,7 +13,7 @@ export const MOCK_DATA = {
             progress: 65,
             budget: 2500000,
             spent: 1625000,
-            dates: '2025-12-15 to 2025-12-18',
+            dates: TODAY,
             location: 'Taj Palace, Delhi',
             overdueTasks: 3,
             primaryLeadId: 'w1',
@@ -70,6 +72,7 @@ export const MOCK_DATA = {
             status: 'Submitted',
             priority: 'High',
             assignee: 'w2',
+            vendorId: 'v2',
             dueDate: '2025-12-09',
             location: 'Main Hall',
             checklistDone: 3,
@@ -87,6 +90,7 @@ export const MOCK_DATA = {
             status: 'Open',
             priority: 'Medium',
             assignee: 'w3',
+            vendorId: 'v1',
             dueDate: '2025-12-07',
             location: 'Kitchen',
             checklistDone: 0,
@@ -104,6 +108,7 @@ export const MOCK_DATA = {
             status: 'Submitted',
             priority: 'High',
             assignee: 'w3',
+            vendorId: 'v1',
             dueDate: '2025-12-10',
             location: 'Office',
             checklistDone: 3,
@@ -190,9 +195,9 @@ export const MOCK_DATA = {
         { id: 'w5', name: 'Arjun Mehta', skills: ['Setup', 'Installation'], available: true, tasksCount: 2, performance: 78, phone: '+91 98765 43214', email: 'arjun@eventflow.com', joinDate: '2024-08-15', role: 'worker' }
     ],
     vendors: [
-        { id: 'v1', name: 'Royal Caterers', category: 'Catering', rating: 4.5, status: 'Confirmed', phone: '+91 98765 00001', pricing: '₹800-1200/plate' },
-        { id: 'v2', name: 'Light Magic', category: 'Lighting', rating: 4.8, status: 'Pending', phone: '+91 98765 00002', pricing: '₹50,000-2,00,000' },
-        { id: 'v3', name: 'Bloom Florists', category: 'Decor', rating: 4.6, status: 'Confirmed', phone: '+91 98765 00003', pricing: '₹1,00,000-5,00,000' }
+        { id: 'v1', name: 'Royal Caterers', category: 'Catering', rating: 4.5, status: 'Confirmed', phone: '+91 98765 00001', email: 'royal@catering.com', location: 'South Delhi', pricing: '₹800-1200/plate', services: ['Wedding Catering', 'Corporate Events', 'Buffet Services'] },
+        { id: 'v2', name: 'Light Magic', category: 'Lighting', rating: 4.8, status: 'Pending', phone: '+91 98765 00002', email: 'info@lightmagic.com', location: 'Noida', pricing: '₹50,000-2,00,000', services: ['Stage Lighting', 'Ambient Lighting', 'LED Walls'] },
+        { id: 'v3', name: 'Bloom Florists', category: 'Decor', rating: 4.6, status: 'Confirmed', phone: '+91 98765 00003', email: 'contact@bloom.com', location: 'Gurgaon', pricing: '₹1,00,000-5,00,000', services: ['Floral Arrangements', 'Mandap Decor', 'Table Centerpieces'] }
     ],
     notifications: [
         { id: 'n1', type: 'approval', title: 'Task approval pending', message: 'Lighting Setup submitted by Anjali Singh', time: '2 hours ago', read: false, taskId: 't2' },
