@@ -1,142 +1,105 @@
-# EventFlow - Event Planning Management System
+# Event Planner Pro
 
-A comprehensive event planning and management application built with React, designed for event planners to manage multiple events, tasks, teams, and budgets efficiently.
+**Event Planner Pro** is a comprehensive, production-ready B2B event management application designed for modern event planning agencies. It unifies task management, workforce coordination, inventory tracking, and financial oversight into a single, mobile-responsive platform.
 
-## 🚀 Features
+Built with **React**, **Tailwind CSS**, and **Supabase**, and mobile-ready via **Capacitor**.
 
-### Core Features
-- **Multi-Event Management** - Handle multiple events simultaneously
-- **Task Management** - Create, assign, and track tasks with approval workflows
-- **Team Management** - Manage workers, leads, and team assignments
-- **Vendor Management** - Track and manage event vendors
-- **Budget Tracking** - Monitor budgets, spending, and utilization
-- **Role-Based Access** - Owner, Lead, and Worker roles with different permissions
-- **Notifications** - Real-time notifications for approvals, deadlines, and updates
-- **Analytics Dashboard** - Track event performance, team metrics, and financials
+## 🚀 Key Features
 
-### User Roles
-- **Owner** - Full access to all features including budget and analytics
-- **Lead** - Can manage events, approve tasks, and view team performance
-- **Worker** - Can update task status and view assigned tasks
+- **🏆 Comprehensive Event Management**: detailed tracking of Weddings and corporate events with support for nested sub-events (e.g., Sangeet, Haldi).
+- **📝 Smart Task Board**: Kanban and List views for managing thousands of tasks with priority, dependencies, and approval workflows.
+- **📦 Inventory Control**: Real-time tracking of owned stock with check-in/check-out workflows and QR code potential.
+- **💰 Financial Intelligence**: Integrated budget vs. actuals tracking, expense logging, and profit margin analysis.
+- **👥 Team & Vendor CRM**: Manage freelance workforce schedules and vendor databases with performance ratings.
+- **📱 Mobile Native**: Fully responsive design wrapped with Capacitor for a native Android/iOS experience for ground staff.
 
 ## 🛠️ Tech Stack
 
-- **React** 18.x
-- **Lucide React** - Icon library
-- **Tailwind CSS** - Styling
-- **Vite** - Build tool
+- **Frontend Builder:** [Vite](https://vitejs.dev/)
+- **Framework:** [React 18](https://react.dev/)
+- **UI System:** [Tailwind CSS](https://tailwindcss.com/)
+- **Icons:** [Lucide React](https://lucide.dev/)
+- **Backend/DB:** [Supabase](https://supabase.com/) (PostgreSQL)
+- **Mobile Runtime:** [Capacitor](https://capacitorjs.com/)
+- **Analytics:** [Recharts](https://recharts.org/)
 
-## 📦 Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/event-planner-pro.git
-cd event-planner-pro
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Start the development server:
-```bash
-npm run dev
-```
-
-4. Open your browser and navigate to:
-```
-http://localhost:5173
-```
-
-## 🏗️ Project Structure
-
-```
-event-planner-pro/
-├── public/              # Static assets
-├── src/
-│   ├── components/      # Reusable components
-│   │   ├── common/      # Common UI components
-│   │   ├── events/      # Event-related components
-│   │   ├── tasks/       # Task-related components
-│   │   ├── team/        # Team management components
-│   │   └── modals/      # Modal dialogs
-│   ├── data/            # Mock data and constants
-│   ├── hooks/           # Custom React hooks
-│   ├── utils/           # Utility functions
-│   ├── App.jsx          # Main app component
-│   ├── main.jsx         # Entry point
-│   └── index.css        # Global styles
-├── .gitignore
-├── package.json
-├── vite.config.js
-└── README.md
-```
-
-## 🚀 Building for Production
+## 📂 Project Structure
 
 ```bash
-npm run build
+src/
+├── components/
+│   ├── events/       # Event cards, lists, detail views
+│   ├── layout/       # Sidebar, Header, Mobile Nav
+│   ├── modals/       # All pop-up forms (New Task, Inventory Request)
+│   ├── tasks/        # Kanban board, task list components
+│   └── ...
+├── context/          # React Context (Auth, Data, Toast)
+├── data/             # Static templates and mock fallback data
+├── pages/            # Main route views (Dashboard, Finance, Inventory)
+└── utils/            # Helper functions (Formatters, Date logic)
 ```
 
-The production-ready files will be in the `dist/` directory.
+## ⚡ Getting Started
 
-## 📝 Usage
+### Prerequisites
+- Node.js (v18+)
+- npm or pnpm
+- Git
 
-### Default Login
-- **Username:** Priya Sharma (Owner)
-- **Role:** Owner (Full access)
+### Installation
 
-### Creating an Event
-1. Click "New Event" button on dashboard
-2. Fill in event details (name, client, date, budget)
-3. Assign team members
-4. Create and assign tasks
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd event-planner-pro
+   ```
 
-### Managing Tasks
-1. Navigate to Tasks tab
-2. Create tasks with descriptions and deadlines
-3. Assign to workers
-4. Workers update status
-5. Leads/Owners approve completed tasks
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-### Approval Workflow
-- Workers mark tasks as "Submitted for Approval"
-- Tasks requiring >₹50k budget need owner approval
-- Leads can approve tasks under ₹50k
-- Owners get notifications for high-budget approvals
+3. **Environment Setup**
+   Create a `.env` file in the root directory (or use `cred.env` as a reference) and add your Supabase credentials:
+   ```env
+   VITE_SUPABASE_URL=your_supabase_url
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
 
-## 🔐 Environment Variables
+4. **Run the Development Server**
+   ```bash
+   npm run dev
+   ```
+   The app will typically run at `http://localhost:5173`.
 
-Create a `.env` file in the root directory:
+## 📱 Mobile Sync (Capacitor)
 
-```env
-VITE_API_URL=your_api_url_here
-VITE_APP_NAME=EventFlow
-```
+To sync changes to the native Android project:
+
+1. **Build the web assets**
+   ```bash
+   npm run build
+   ```
+
+2. **Sync with Capacitor**
+   ```bash
+   npx cap sync
+   ```
+
+3. **Open Android Studio**
+   ```bash
+   npx cap open android
+   ```
+
+## 🏗️ Database Setup
+The database schema is managed via Supabase. You can find the full schema definition in `supabase_schema.sql`. Run this SQL script in your Supabase SQL Editor to set up all necessary tables, relationships, and Row Level Security (RLS) policies.
 
 ## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
 ## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 👥 Authors
-
-- Your Name - Initial work
-
-## 🙏 Acknowledgments
-
-- Built with React and Vite
-- Icons by Lucide React
-- Styled with Tailwind CSS
-
-## 📧 Support
-
-For support, email support@eventflow.com or open an issue on GitHub.
+This project is licensed under the MIT License.
