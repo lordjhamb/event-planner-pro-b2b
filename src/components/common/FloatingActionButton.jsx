@@ -62,7 +62,7 @@ const FloatingActionButton = ({
     if (!config || !config.show) return null;
 
     return (
-        <div className="fixed bottom-20 lg:bottom-8 right-6 lg:right-8 z-40 group">
+        <div className="fixed bottom-28 lg:bottom-8 right-6 lg:right-8 z-40 group">
             <button
                 onClick={config.action}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-110 active:scale-95 transition-all duration-300 animate-bounce-in"

@@ -1,12 +1,12 @@
 
 import React, { useState } from 'react';
-import { X, CheckSquare, Users, Tag, DollarSign, Check, Info, Calendar, Store, ShieldCheck, Camera, Plus, Trash2 } from 'lucide-react';
+import { X, CheckSquare, Users, Tag, DollarSign, Check, Info, Calendar, Store, ShieldCheck, Camera, Plus, Trash2, UserPlus } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 
 const NewTaskModal = ({ isOpen, onClose, selectedEvent, taskToEdit }) => {
     const { currentUser } = useAuth();
-    const { workers, events, vendors, addTask, updateTask } = useData();
+    const { workers, events, weddings, vendors, addTask, updateTask, inventory, requestInventory, addWorker } = useData();
 
     const [taskBudget, setTaskBudget] = useState('');
     const [isBudgetRelated, setIsBudgetRelated] = useState(false);
@@ -14,10 +14,20 @@ const NewTaskModal = ({ isOpen, onClose, selectedEvent, taskToEdit }) => {
     const [requiresApproval, setRequiresApproval] = useState(false);
     const [requiresPhotoProof, setRequiresPhotoProof] = useState(false);
 
+    // Inventory Logic
+    const [selectedInventory, setSelectedInventory] = useState([]);
+    const [inventoryItemId, setInventoryItemId] = useState('');
+    const [inventoryQty, setInventoryQty] = useState(1);
+
     // Auto-assignment Logic
     const [approver, setApprover] = useState(currentUser.role === 'lead' ? currentUser : { name: 'Owner', role: 'owner' });
     const [showChangeApprover, setShowChangeApprover] = useState(false);
     const [isAutoEscalated, setIsAutoEscalated] = useState(false);
+
+    // Temp Worker Logic
+    const [isCreatingTempWorker, setIsCreatingTempWorker] = useState(false);
+    const [tempWorkerName, setTempWorkerName] = useState('');
+    const [tempWorkerPhone, setTempWorkerPhone] = useState('');
 
     // Checklist Logic
     const [checklistItems, setChecklistItems] = useState([]);
@@ -43,6 +53,20 @@ const NewTaskModal = ({ isOpen, onClose, selectedEvent, taskToEdit }) => {
 
     const removeChecklistItem = (id) => {
         setChecklistItems(checklistItems.filter(item => item.id !== id));
+    };
+
+    const addInventoryToTask = () => {
+        if (!inventoryItemId) return;
+        const item = inventory.find(i => i.id === inventoryItemId);
+        if (item) {
+            setSelectedInventory([...selectedInventory, { ...item, qty: inventoryQty }]);
+            setInventoryItemId('');
+            setInventoryQty(1);
+        }
+    };
+
+    const removeInventoryFromTask = (index) => {
+        setSelectedInventory(selectedInventory.filter((_, i) => i !== index));
     };
 
     // Handle Budget Escalation
@@ -103,6 +127,9 @@ const NewTaskModal = ({ isOpen, onClose, selectedEvent, taskToEdit }) => {
                 setChecklistItems([]);
                 setNewChecklistItem('');
                 setSelectedEventId(selectedEvent?.id || '');
+                setIsCreatingTempWorker(false);
+                setTempWorkerName('');
+                setTempWorkerPhone('');
 
                 // Reset Refs
                 if (titleRef.current) titleRef.current.value = '';
@@ -110,16 +137,45 @@ const NewTaskModal = ({ isOpen, onClose, selectedEvent, taskToEdit }) => {
                 if (priorityRef.current) priorityRef.current.value = 'Medium';
                 if (dueDateRef.current) dueDateRef.current.value = '';
                 if (assigneeRef.current) assigneeRef.current.value = '';
+                if (assigneeRef.current) assigneeRef.current.value = '';
                 if (vendorRef.current) vendorRef.current.value = '';
+                setSelectedInventory([]); // Reset Inventory
             }
         }
     }, [isOpen, selectedEvent, currentUser, taskToEdit]);
 
 
-    const handleCreateTask = () => {
+    const handleCreateTask = async () => {
         if (!selectedEventId && !selectedEvent) {
             alert('Please select an event');
             return;
+        }
+
+        let assignedWorkerId = assigneeRef.current?.value;
+
+        // Handle Temp Worker Creation
+        if (isCreatingTempWorker) {
+            if (!tempWorkerName || !tempWorkerPhone) {
+                alert("Please provide both Name and Phone Number for the temporary worker.");
+                return;
+            }
+
+            // Create the worker first
+            // NOTE: addWorker must return the new ID for this to work seamlessly
+            const newWorkerId = await addWorker({
+                name: tempWorkerName,
+                phone: tempWorkerPhone,
+                role: 'Helper', // Distinguish role
+                skills: ['General Support'],
+                available: true
+            });
+
+            if (newWorkerId) {
+                assignedWorkerId = newWorkerId;
+            } else {
+                alert("Failed to create temporary worker. Please try again.");
+                return;
+            }
         }
 
         const taskData = {
@@ -129,7 +185,7 @@ const NewTaskModal = ({ isOpen, onClose, selectedEvent, taskToEdit }) => {
             description: descriptionRef.current?.value || '',
             priority: priorityRef.current?.value || 'Medium',
             dueDate: dueDateRef.current?.value || new Date().toISOString().split('T')[0],
-            assignee: assigneeRef.current?.value,
+            assignee: assignedWorkerId, // Use resolved ID
             vendorId: vendorRef.current?.value,
             status: requiresApproval ? 'Submitted' : (taskToEdit ? taskToEdit.status : 'Pending'), // Keep status if editing unless approval needed
             budget: taskBudget,
@@ -147,11 +203,40 @@ const NewTaskModal = ({ isOpen, onClose, selectedEvent, taskToEdit }) => {
         if (taskToEdit) {
             updateTask(taskData);
         } else {
-            addTask(taskData);
+            addTask(taskData).then((newTaskId) => {
+                // If creating new task, we need the ID to attach inventory
+                // NOTE: standard addTask implementation needs to return ID. 
+                // For now, we will assume we can get the ID via the tempId logic in this scope or chain it.
+                // Simplified: Loop through selectedInventory and call requestInventory
+                selectedInventory.forEach(item => {
+                    requestInventory(taskData.id, item.id, item.qty);
+                });
+            });
         }
+
+        // Handle Edit Mode Inventory (Simple addition for now)
+        if (taskToEdit) {
+            selectedInventory.forEach(item => {
+                requestInventory(taskToEdit.id, item.id, item.qty);
+            });
+        }
+
         onClose();
     };
 
+
+    const handleTitleChange = (e) => {
+        const value = e.target.value;
+        const lowerVal = value.toLowerCase();
+
+        // Keywords that trigger auto-flagging
+        const financeKeywords = ['book', 'pay', 'hire', 'rent', 'deposit', 'advance', 'reserve', 'purchase', 'buy', 'cost'];
+
+        if (financeKeywords.some(keyword => lowerVal.includes(keyword))) {
+            if (!isBudgetRelated) setIsBudgetRelated(true);
+            if (!isVendorRelated) setIsVendorRelated(true);
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -171,35 +256,60 @@ const NewTaskModal = ({ isOpen, onClose, selectedEvent, taskToEdit }) => {
 
                 {/* Scrollable Content */}
                 <div className="p-6 space-y-8 overflow-y-auto flex-1 custom-scrollbar">
-                    {/* Event Selection Context */}
-                    {selectedEvent ? (
-                        <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100 flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
-                                <Tag size={20} />
-                            </div>
-                            <div>
-                                <div className="text-xs font-bold text-indigo-500 uppercase tracking-wider">Adding task to event</div>
-                                <div className="font-bold text-indigo-900">{selectedEvent.name}</div>
-                            </div>
+                    {/* Event Selection - Always Editable */}
+                    <div className="space-y-1.5">
+                        <label className="block text-sm font-bold text-gray-700">Event *</label>
+                        <div className="relative">
+                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                            <select
+                                className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all appearance-none"
+                                value={selectedEventId}
+                                onChange={(e) => setSelectedEventId(e.target.value)}
+                            >
+                                <option value="">Select an event...</option>
+
+                                {/* 
+                                    Context-Aware Filtering:
+                                    1. If valid wedding context (selectedEvent has weddingId) -> Show only that Wedding's events.
+                                    2. If standalone event -> Show only that event.
+                                    3. If no context (Global Add) -> Show all.
+                                */}
+
+                                {weddings
+                                    .filter(wedding => {
+                                        if (!selectedEvent) return true; // Show all if global
+                                        // If context is a sub-event, only show its parent wedding
+                                        if (selectedEvent.weddingId) return wedding.id.toString() === selectedEvent.weddingId.toString();
+                                        // If context IS the wedding (Main Event Page)
+                                        if (wedding.id.toString() === selectedEvent.id.toString()) return true;
+                                        // If context is standalone, show no weddings
+                                        return false;
+                                    })
+                                    .map(wedding => {
+                                        const siblings = events.filter(e => e.weddingId && e.weddingId.toString() === wedding.id.toString());
+                                        return (
+                                            <optgroup key={wedding.id} label={wedding.name}>
+                                                {siblings.map(evt => (
+                                                    <option key={evt.id} value={evt.id}>{evt.name} ({evt.type})</option>
+                                                ))}
+                                            </optgroup>
+                                        );
+                                    })}
+
+                                {/* Show Single Events only if: Global Context OR Context is specifically a Single Event */}
+                                {(!selectedEvent || (!selectedEvent.weddingId && !weddings.find(w => w.id === selectedEvent.id))) && (
+                                    <optgroup label="Single Events">
+                                        {events
+                                            .filter(e => !e.weddingId)
+                                            .filter(e => !selectedEvent || e.id === selectedEvent.id) // If restricted, only show self
+                                            .map(event => (
+                                                <option key={event.id} value={event.id}>{event.name}</option>
+                                            ))}
+                                    </optgroup>
+                                )}
+                            </select>
                         </div>
-                    ) : (
-                        <div className="space-y-1.5">
-                            <label className="block text-sm font-bold text-gray-700">Select Event *</label>
-                            <div className="relative">
-                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                                <select
-                                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all appearance-none"
-                                    value={selectedEventId}
-                                    onChange={(e) => setSelectedEventId(e.target.value)}
-                                >
-                                    <option value="">Select an event...</option>
-                                    {events.map(event => (
-                                        <option key={event.id} value={event.id}>{event.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-                    )}
+                    </div>
 
                     {/* Basic Fields */}
                     <div className="space-y-4">
@@ -211,6 +321,7 @@ const NewTaskModal = ({ isOpen, onClose, selectedEvent, taskToEdit }) => {
                             <label className="block text-sm font-bold text-gray-700 mb-1.5">Task Title *</label>
                             <input
                                 ref={titleRef}
+                                onChange={handleTitleChange}
                                 type="text"
                                 placeholder="e.g., Setup Main Stage"
                                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
@@ -247,14 +358,60 @@ const NewTaskModal = ({ isOpen, onClose, selectedEvent, taskToEdit }) => {
                         </div>
                         <div>
                             <label className="block text-sm font-bold text-gray-700 mb-1.5">Assign To</label>
-                            <select ref={assigneeRef} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all">
-                                <option value="">Select worker...</option>
-                                {workers.map(worker => (
-                                    <option key={worker.id} value={worker.id}>
-                                        {worker.name} - {worker.skills[0]} {worker.available ? '✓' : '(Busy)'}
-                                    </option>
-                                ))}
-                            </select>
+                            {!isCreatingTempWorker ? (
+                                <select
+                                    ref={assigneeRef}
+                                    onChange={(e) => {
+                                        if (e.target.value === 'NEW_TEMP') {
+                                            setIsCreatingTempWorker(true);
+                                        }
+                                    }}
+                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                                >
+                                    <option value="">Select worker...</option>
+                                    {workers.map(worker => (
+                                        <option key={worker.id} value={worker.id}>
+                                            {worker.name} - {worker.skills?.[0] || 'Worker'} {worker.available ? '✓' : '(Busy)'}
+                                        </option>
+                                    ))}
+                                    <option value="NEW_TEMP" className="font-bold text-primary-600">+ Add Temporary Worker</option>
+                                </select>
+                            ) : (
+                                <div className="bg-primary-50 p-4 rounded-xl border border-primary-100 animate-fade-in group relative">
+                                    <button
+                                        onClick={() => setIsCreatingTempWorker(false)}
+                                        className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+                                        title="Cancel adding temp worker"
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <div className="p-1.5 bg-primary-100 rounded-lg text-primary-700">
+                                            <UserPlus size={16} />
+                                        </div>
+                                        <span className="text-sm font-bold text-primary-800">New Temporary Worker</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <input
+                                            type="text"
+                                            placeholder="Full Name *"
+                                            value={tempWorkerName}
+                                            onChange={(e) => setTempWorkerName(e.target.value)}
+                                            className="w-full px-3 py-2 bg-white border border-primary-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                                        />
+                                        <input
+                                            type="tel"
+                                            placeholder="Phone Number *"
+                                            value={tempWorkerPhone}
+                                            onChange={(e) => setTempWorkerPhone(e.target.value)}
+                                            className="w-full px-3 py-2 bg-white border border-primary-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                                        />
+                                    </div>
+                                    <p className="text-[10px] text-primary-600 mt-2 ml-1">
+                                        * This worker will be saved as "Temp Staff" for future tasks.
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -373,6 +530,55 @@ const NewTaskModal = ({ isOpen, onClose, selectedEvent, taskToEdit }) => {
                             )}
                             {checklistItems.length === 0 && (
                                 <p className="text-xs text-gray-400 text-center italic">No sub-tasks added yet</p>
+                            )}
+                        </div>
+                    </div>
+
+
+
+                    {/* Inventory Requirements */}
+                    <div className="pt-4 border-t border-gray-100">
+                        <label className="block text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+                            <div className="p-1 bg-amber-100 rounded text-amber-700"><CheckSquare size={14} /></div>
+                            Equipment Needs
+                        </label>
+                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 space-y-3">
+                            <div className="flex gap-2">
+                                <select
+                                    className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm"
+                                    value={inventoryItemId}
+                                    onChange={(e) => setInventoryItemId(e.target.value)}
+                                >
+                                    <option value="">Select Equipment...</option>
+                                    {inventory.map(item => (
+                                        <option key={item.id} value={item.id}>{item.name} ({item.availableQuantity} avail)</option>
+                                    ))}
+                                </select>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    className="w-20 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm"
+                                    value={inventoryQty}
+                                    onChange={(e) => setInventoryQty(parseInt(e.target.value) || 1)}
+                                />
+                                <button
+                                    onClick={addInventoryToTask}
+                                    disabled={!inventoryItemId}
+                                    className="px-3 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50"
+                                >
+                                    <Plus size={18} />
+                                </button>
+                            </div>
+
+                            {selectedInventory.length > 0 && (
+                                <div className="space-y-2">
+                                    {selectedInventory.map((item, idx) => (
+                                        <div key={idx} className="flex justify-between items-center bg-white p-2 border border-gray-100 rounded text-sm">
+                                            <span>{item.name} <span className="font-bold text-amber-600">x{item.qty}</span></span>
+                                            <button onClick={() => removeInventoryFromTask(idx)} className="text-red-400 hover:text-red-500"><X size={14} /></button>
+                                        </div>
+                                    ))}
+                                </div>
                             )}
                         </div>
                     </div>
@@ -562,7 +768,7 @@ const NewTaskModal = ({ isOpen, onClose, selectedEvent, taskToEdit }) => {
                     </button>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

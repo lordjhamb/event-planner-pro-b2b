@@ -24,31 +24,33 @@ const KpiCard = ({ kpi, onClick }) => {
             role="button"
             tabIndex={0}
             className={`
-                relative overflow-hidden rounded-xl md:rounded-3xl p-2 md:p-6 text-left transition-all duration-300
-                hover:-translate-y-1 hover:shadow-md cursor-pointer
+                relative overflow-hidden rounded-[2rem] p-6 text-left transition-all duration-300
+                hover:-translate-y-1 hover:shadow-lg cursor-pointer
                 ${bgClass}
                 w-full min-w-0
-                min-h-[100px] md:min-h-[160px] flex flex-col justify-between
+                min-h-[150px] flex flex-col justify-end
             `}
         >
-            {/* Top Row: Label and Icon */}
-            <div className="flex items-start justify-between gap-2 w-full relative z-10">
-                <span className="flex-1 text-xs md:text-sm font-semibold tracking-wide opacity-90 leading-tight break-words min-w-0">
-                    {kpi.label}
-                </span>
-                <div className={`p-1.5 md:p-2.5 rounded-full shrink-0 ${iconBgClass}`}>
-                    <kpi.icon size={16} className="md:w-5 md:h-5" strokeWidth={2.5} />
-                </div>
+            {/* Cut-out / Tab Icon */}
+            <div className={`absolute top-0 right-0 w-16 h-16 flex items-center justify-center rounded-bl-[2rem] ${iconBgClass}`}>
+                <kpi.icon size={24} strokeWidth={2} />
             </div>
 
-            {/* Bottom Row: Big Value */}
-            <div className="relative z-10 mt-2">
-                <div className="flex items-baseline gap-1 flex-wrap">
-                    <span className="text-3xl md:text-4xl font-heading font-bold tracking-tight">
+            {/* Label Positioned Top Left */}
+            <div className="absolute top-6 left-6 max-w-[calc(100%-4rem)]">
+                <span className="text-sm font-bold tracking-wide opacity-90 leading-tight block">
+                    {kpi.label}
+                </span>
+            </div>
+
+            {/* Value positioned Bottom */}
+            <div className="relative z-10 mt-8">
+                <div className="flex items-baseline gap-1.5 flex-wrap">
+                    <span className="text-4xl md:text-5xl font-heading font-bold tracking-tighter">
                         {kpi.value}
                     </span>
-                    <span className="text-sm font-medium opacity-70">
-                        Tasks
+                    <span className="text-sm font-bold opacity-70 mb-1">
+                        {kpi.unit || 'Tasks'}
                     </span>
                 </div>
             </div>

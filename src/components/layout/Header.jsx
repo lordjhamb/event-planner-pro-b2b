@@ -3,7 +3,7 @@ import { Menu, Bell, Search, MessageSquare, LogOut, Settings, User, ChevronDown 
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 
-const Header = ({ showNotifications, setShowNotifications }) => {
+const Header = ({ showNotifications, setShowNotifications, onMenuToggle }) => {
     const { currentUser, logout } = useAuth();
     const { notifications } = useData();
     const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -34,7 +34,10 @@ const Header = ({ showNotifications, setShowNotifications }) => {
         <header className="fixed top-0 left-0 right-0 z-50 bg-gray-50 border-b-0 px-4 lg:px-8 py-3 pt-[calc(env(safe-area-inset-top)+0.5rem)] lg:ml-64 transition-all duration-300">
             <div className="flex items-center justify-between max-w-[90vw] lg:max-w-7xl mx-auto">
                 <div className="flex items-center gap-3 lg:hidden">
-                    <button className="text-gray-500 hover:text-gray-700 transition-colors">
+                    <button
+                        onClick={onMenuToggle}
+                        className="text-gray-500 hover:text-gray-700 transition-colors"
+                    >
                         <Menu size={24} />
                     </button>
                     <span className="text-xl font-heading font-bold text-gray-900 tracking-tight">EventFlow</span>

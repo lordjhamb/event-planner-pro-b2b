@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, MapPin, Phone, Star, Tag, ExternalLink, Mail, FileText, Calendar, CheckSquare } from 'lucide-react';
 import { useData } from '../../context/DataContext';
+import { createWhatsAppLink } from '../../utils/whatsapp';
 
 const VendorDetailModal = ({ vendor, onClose }) => {
     const { tasks, events } = useData();
@@ -86,11 +87,23 @@ const VendorDetailModal = ({ vendor, onClose }) => {
                     <div>
                         <h4 className="font-semibold mb-2 text-gray-900">Contact Information</h4>
                         <div className="space-y-3 bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
-                            <div className="flex items-center gap-3 text-sm">
+                            <div className="flex items-center gap-3 text-sm flex-1">
                                 <Phone size={16} className="text-gray-400" />
-                                <a href={`tel:${vendor.phone}`} className="text-indigo-600 hover:text-indigo-700 font-medium hover:underline">
-                                    {vendor.phone}
-                                </a>
+                                <div className="flex items-center gap-2">
+                                    <a href={`tel:${vendor.phone}`} className="text-indigo-600 hover:text-indigo-700 font-medium hover:underline">
+                                        {vendor.phone}
+                                    </a>
+                                    <span className="text-gray-300">|</span>
+                                    <a
+                                        href={createWhatsAppLink(vendor.phone, `Hi ${vendor.name}, we are interested in your services for an upcoming event.`)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-green-600 font-bold hover:underline text-xs flex items-center gap-1"
+                                    >
+                                        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WA" className="w-3 h-3" />
+                                        WhatsApp
+                                    </a>
+                                </div>
                             </div>
                             <div className="flex items-center gap-3 text-sm">
                                 <Mail size={16} className="text-gray-400" />
@@ -120,10 +133,19 @@ const VendorDetailModal = ({ vendor, onClose }) => {
                         </div>
                     </div>
 
-                    <div className="pt-2">
-                        <button className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/30">
+                    <div className="pt-2 grid grid-cols-2 gap-3">
+                        <button className="w-full bg-white border border-indigo-200 text-indigo-700 py-3 rounded-xl font-bold hover:bg-indigo-50 transition-colors">
                             Contact Vendor
                         </button>
+                        <a
+                            href={createWhatsAppLink(vendor.phone, `Hi ${vendor.name}, inquiry from EventFlow.`)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full bg-[#25D366] text-white py-3 rounded-xl font-bold hover:bg-[#128C7E] transition-colors flex items-center justify-center gap-2"
+                        >
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WA" className="w-5 h-5 brightness-0 invert" />
+                            Chat on WhatsApp
+                        </a>
                     </div>
                 </div>
             </div>

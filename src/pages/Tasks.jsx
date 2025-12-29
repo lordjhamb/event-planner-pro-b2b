@@ -31,6 +31,8 @@ const Tasks = ({ onSelectTask, initialFilter = 'all' }) => {
             case 'completed': // Handle 'completed' generically if passed
             case 'Closed':
                 return tasks.filter(t => t.status === 'Completed' || t.status === 'Approved'); // Assuming Closed = Completed/Approved
+            case 'issues':
+                return tasks.filter(t => t.status === 'Submitted' || t.status === 'Blocked' || t.hasIssue || t.helpNote || t.rejectionNote);
             default:
                 return tasks.filter(t => t.status === filterStatus);
         }
@@ -40,6 +42,8 @@ const Tasks = ({ onSelectTask, initialFilter = 'all' }) => {
 
     const tabs = [
         { id: 'all', label: 'All Tasks' },
+        { id: 'issues', label: 'Issues' },
+        { id: 'overdue', label: 'Overdue' },
         { id: 'Open', label: 'Open' },
         { id: 'In Progress', label: 'In Progress' },
         { id: 'upcoming', label: 'Upcoming' },
@@ -58,7 +62,7 @@ const Tasks = ({ onSelectTask, initialFilter = 'all' }) => {
             </div>
 
             {/* Special Filter Badges (if active from dashboard) */}
-            {['overdue', 'upcoming', 'pending_approval'].includes(filterStatus) && (
+            {['upcoming', 'pending_approval'].includes(filterStatus) && (
                 <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg flex items-center justify-between">
                     <span className="text-sm font-medium text-yellow-800 capitalize">
                         Filtering by: {filterStatus.replace('_', ' ')}

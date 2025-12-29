@@ -14,6 +14,10 @@ import Team from './pages/Team';
 import Vendors from './pages/Vendors';
 import Analytics from './pages/Analytics';
 import Calendar from './pages/Calendar';
+
+
+import Inventory from './pages/Inventory';
+import Finance from './pages/Finance'; // [NEW]
 import Login from './pages/Login';
 
 // Components (for specific views like Event Detail)
@@ -30,7 +34,7 @@ import VendorDetailModal from './components/modals/VendorDetailModal';
 import FloatingActionButton from './components/common/FloatingActionButton';
 
 // Icon imports for menuItems (assuming these are from a library like 'lucide-react')
-import { LayoutDashboard, Calendar as CalendarIcon, CheckSquare, Users, ShoppingBag, DollarSign, BarChart3, Settings } from 'lucide-react';
+import { LayoutDashboard, Calendar as CalendarIcon, CheckSquare, Users, ShoppingBag, DollarSign, BarChart3, Settings, Package } from 'lucide-react';
 
 
 const AppContent = () => {
@@ -55,6 +59,7 @@ const AppContent = () => {
     { id: 'tasks', icon: CheckSquare, label: 'Tasks' },
     { id: 'team', icon: Users, label: 'Team' },
     { id: 'vendors', icon: ShoppingBag, label: 'Vendors' },
+    { id: 'inventory', icon: Package, label: 'Inventory' }, // [NEW]
     { id: 'finance', icon: DollarSign, label: 'Finance' },
     { id: 'reports', icon: BarChart3, label: 'Reports' },
     { id: 'settings', icon: Settings, label: 'Settings' },
@@ -113,18 +118,28 @@ const AppContent = () => {
       <Header
         showNotifications={showNotifications}
         setShowNotifications={setShowNotifications}
+        onMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
       />
+
+      {/* Mobile Sidebar Overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         setSelectedEvent={setSelectedEvent}
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
       />
 
       <main className="lg:pl-64 pt-[calc(env(safe-area-inset-top)+4rem)] pb-24 lg:pb-8 px-4 lg:px-8 w-full lg:max-w-7xl mx-auto transition-all duration-300 overflow-x-hidden">
         {/* DEBUG: State Indicator */}
-        <div className="bg-yellow-100 p-2 text-xs text-yellow-800 mb-2 rounded border border-yellow-200">
-          Current Tab: {activeTab}
-        </div>
+
         {activeTab === 'dashboard' && (
           <Dashboard
             onSelectEvent={handleEventSelect}
@@ -163,6 +178,7 @@ const AppContent = () => {
               setEventToEdit(event);
               setShowNewEventModal(true);
             }}
+            onSwitchEvent={setSelectedEvent}
           />
         )}
         {activeTab === 'tasks' && <Tasks onSelectTask={handleTaskSelect} initialFilter={initialTaskFilter} />}
@@ -173,6 +189,9 @@ const AppContent = () => {
           />
         )}
         {activeTab === 'vendors' && <Vendors onSelectVendor={handleVendorSelect} />}
+        {activeTab === 'vendors' && <Vendors onSelectVendor={handleVendorSelect} />}
+        {activeTab === 'inventory' && <Inventory />}
+        {activeTab === 'finance' && <Finance />} {/* [NEW] */}
       </main>
 
       <BottomNav

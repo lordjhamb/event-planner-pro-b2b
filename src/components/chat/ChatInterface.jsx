@@ -12,15 +12,18 @@ const ChatInterface = ({
 }) => {
     const [messageInput, setMessageInput] = useState('');
     const [localActiveChat, setLocalActiveChat] = useState('group'); // Default if not controlled
+    const [showMobileChat, setShowMobileChat] = useState(false); // Mobile view state
 
     // Use controlled or uncontrolled state
     const currentChatId = activeChatId !== undefined ? activeChatId : localActiveChat;
+
     const handleChatSelect = (id) => {
         if (onChatSelect) {
             onChatSelect(id);
         } else {
             setLocalActiveChat(id);
         }
+        setShowMobileChat(true); // Switch to chat view on mobile selection
     };
 
     const handleSend = () => {
@@ -29,55 +32,67 @@ const ChatInterface = ({
         setMessageInput('');
     };
 
-    return (
-        <div className={`bg-white rounded-2xl shadow-sm border border-gray-100 animate-fade-in overflow-hidden ${height} flex`}>
-            {/* Chat Sidebar */}
-            <div className="w-80 border-r border-gray-100 bg-gray-50 flex flex-col">
-                <div className="p-4 border-b border-gray-200">
-                    <h3 className="font-heading font-bold text-gray-900 flex items-center gap-2">
-                        <MessageSquare size={20} className="text-primary-600" />
-                        Messages
-                    </h3>
+    const ChatSidebar = () => (
+        <div className={`flex-col bg-gray-50 border-r border-gray-100 md:flex md:w-80 ${showMobileChat ? 'hidden' : 'flex w-full'}`}>
+            <div className="p-4 border-b border-gray-200">
+                <h3 className="font-heading font-bold text-gray-900 flex items-center gap-2">
+                    <MessageSquare size={20} className="text-primary-600" />
+                    Messages
+                </h3>
+            </div>
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
+                {/* Group Chat Option */}
+                <div
+                    onClick={() => handleChatSelect('group')}
+                    className={`p-3 rounded-xl cursor-pointer transition-all flex items-center gap-3 ${currentChatId === 'group' ? 'bg-white shadow-sm border border-primary-100' : 'hover:bg-white/60'}`}
+                >
+                    <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center">
+                        <Users size={20} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <div className="font-bold text-gray-900 text-sm">Event Group</div>
+                        <div className="text-xs text-gray-500 truncate">Everyone in this event</div>
+                    </div>
                 </div>
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
-                    {/* Group Chat Option */}
+                <div className="px-3 pt-2 pb-1 text-xs font-bold text-gray-400 uppercase tracking-wider">Direct Messages</div>
+                {users.map(worker => (
                     <div
-                        onClick={() => handleChatSelect('group')}
-                        className={`p-3 rounded-xl cursor-pointer transition-all flex items-center gap-3 ${currentChatId === 'group' ? 'bg-white shadow-sm border border-primary-100' : 'hover:bg-white/60'}`}
+                        key={worker.id}
+                        onClick={() => handleChatSelect(worker.id)}
+                        className={`p-3 rounded-xl cursor-pointer transition-all flex items-center gap-3 ${currentChatId === worker.id ? 'bg-white shadow-sm border border-primary-100' : 'hover:bg-white/60'}`}
                     >
-                        <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center">
-                            <Users size={20} />
+                        <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center p-0.5 relative">
+                            <img src={`https://ui-avatars.com/api/?name=${worker.name}&background=random`} alt={worker.name} className="w-full h-full rounded-full" />
+                            <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white ${worker.available ? 'bg-green-500' : 'bg-gray-400'}`}></span>
                         </div>
                         <div className="flex-1 min-w-0">
-                            <div className="font-bold text-gray-900 text-sm">Event Group</div>
-                            <div className="text-xs text-gray-500 truncate">Everyone in this event</div>
+                            <div className="font-bold text-gray-900 text-sm truncate">{worker.name}</div>
+                            <div className="text-xs text-gray-500 truncate">{worker.role}</div>
                         </div>
                     </div>
-                    <div className="px-3 pt-2 pb-1 text-xs font-bold text-gray-400 uppercase tracking-wider">Direct Messages</div>
-                    {users.map(worker => (
-                        <div
-                            key={worker.id}
-                            onClick={() => handleChatSelect(worker.id)}
-                            className={`p-3 rounded-xl cursor-pointer transition-all flex items-center gap-3 ${currentChatId === worker.id ? 'bg-white shadow-sm border border-primary-100' : 'hover:bg-white/60'}`}
-                        >
-                            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center p-0.5 relative">
-                                <img src={`https://ui-avatars.com/api/?name=${worker.name}&background=random`} alt={worker.name} className="w-full h-full rounded-full" />
-                                <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white ${worker.available ? 'bg-green-500' : 'bg-gray-400'}`}></span>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <div className="font-bold text-gray-900 text-sm truncate">{worker.name}</div>
-                                <div className="text-xs text-gray-500 truncate">{worker.role}</div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                ))}
             </div>
+        </div>
+    );
 
-            {/* Chat Area */}
-            <div className="flex-1 flex flex-col bg-white">
+    return (
+        <div className={`bg-white rounded-2xl shadow-sm border border-gray-100 animate-fade-in overflow-hidden ${height} flex flex-col md:flex-row`}>
+            {/* Sidebar - Hidden on mobile if chat is open */}
+            <ChatSidebar />
+
+            {/* Chat Area - Hidden on mobile if list is open */}
+            <div className={`flex-1 flex-col bg-white md:flex ${!showMobileChat ? 'hidden' : 'flex'}`}>
                 {/* Chat Header */}
-                <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white z-10">
                     <div className="flex items-center gap-3">
+                        {/* Mobile Back Button */}
+                        <button
+                            onClick={() => setShowMobileChat(false)}
+                            className="md:hidden p-2 -ml-2 text-gray-500 hover:bg-gray-100 rounded-full"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+                        </button>
+
                         {currentChatId === 'group' ? (
                             <div className="w-10 h-10 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center">
                                 <Users size={20} />
@@ -111,7 +126,7 @@ const ChatInterface = ({
                             </div>
                         ) : (
                             <div key={msg.id} className={`flex ${msg.senderId === 'me' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[70%] rounded-2xl p-3 shadow-sm ${msg.senderId === 'me'
+                                <div className={`max-w-[85%] md:max-w-[70%] rounded-2xl p-3 shadow-sm ${msg.senderId === 'me'
                                     ? 'bg-primary-600 text-white rounded-br-none'
                                     : 'bg-white border border-gray-100 text-gray-800 rounded-bl-none'
                                     }`}>
@@ -126,7 +141,7 @@ const ChatInterface = ({
                 </div>
 
                 {/* Input Area */}
-                <div className="p-4 border-t border-gray-100 bg-white">
+                <div className="p-3 md:p-4 border-t border-gray-100 bg-white">
                     <div className="flex items-center gap-2">
                         <input
                             type="text"

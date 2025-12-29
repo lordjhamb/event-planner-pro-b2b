@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Mail, Phone, Star, Briefcase, Calendar, CheckCircle2 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
+import { createWhatsAppLink } from '../../utils/whatsapp';
 
 const WorkerDetailModal = ({ worker, onClose, onSelectTask }) => {
     const { tasks } = useData();
@@ -47,8 +48,17 @@ const WorkerDetailModal = ({ worker, onClose, onSelectTask }) => {
                             </div>
                             <div className="flex items-center gap-3 text-sm text-gray-600">
                                 <Phone size={16} className="text-primary-500" />
-                                <span>+91 98765 43210</span>
+                                <span>{worker.phone || '+91 98765 43210'}</span>
                             </div>
+                            <a
+                                href={createWhatsAppLink(worker.phone, `Hi ${worker.name}, `)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full mt-2 inline-flex items-center justify-center gap-2 py-2 bg-green-50 text-green-700 rounded-lg text-sm font-bold border border-green-200 hover:bg-green-100 transition-colors"
+                            >
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WA" className="w-4 h-4" />
+                                Chat on WhatsApp
+                            </a>
                         </div>
                         <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 space-y-3">
                             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Current Status</h3>
@@ -81,7 +91,7 @@ const WorkerDetailModal = ({ worker, onClose, onSelectTask }) => {
                                         <div className="flex justify-between items-start mb-1">
                                             <h4 className="font-bold text-gray-900 group-hover:text-primary-600 transition-colors">{task.title}</h4>
                                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${task.status === 'Approved' ? 'bg-green-50 text-green-700 border-green-100' :
-                                                    'bg-gray-50 text-gray-600 border-gray-100'
+                                                'bg-gray-50 text-gray-600 border-gray-100'
                                                 }`}>
                                                 {task.status}
                                             </span>

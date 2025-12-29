@@ -5,14 +5,17 @@ import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import KpiCard from '../components/dashboard/KpiCard';
 import EventCard from '../components/events/EventCard';
+import WeddingCard from '../components/events/WeddingCard';
 
 const Dashboard = ({ onSelectEvent, onSelectTask, onNewEvent, onNewTask, onNewWorker, onNavigate }) => {
     const { currentUser, permissions } = useAuth();
-    const { events, tasks, workers } = useData();
+    const { events, tasks, workers, weddings } = useData();
 
     // Dashboard KPIs Calculation & Config
     const kpis = useMemo(() => {
-        const activeEventsCount = events.filter(e => e.status === 'Active').length;
+        const activeWeddingsCount = weddings ? weddings.filter(w => w.status === 'Active' || w.status === 'Upcoming').length : 0;
+        const activeStandaloneEventsCount = events.filter(e => (e.status === 'Active' || e.status === 'Upcoming') && !e.weddingId).length;
+        const activeEventsCount = activeWeddingsCount + activeStandaloneEventsCount;
 
         const today = new Date().toISOString().split('T')[0];
         const nextWeek = new Date();
@@ -20,6 +23,7 @@ const Dashboard = ({ onSelectEvent, onSelectTask, onNewEvent, onNewTask, onNewWo
         const nextWeekStr = nextWeek.toISOString().split('T')[0];
 
         const overdueCount = tasks.filter(t => t.dueDate < today && t.status !== 'Approved').length;
+        const inProgressCount = tasks.filter(t => t.status === 'In Progress').length;
 
         const upcomingCount = tasks.filter(t =>
             t.dueDate >= today &&
@@ -29,11 +33,8 @@ const Dashboard = ({ onSelectEvent, onSelectTask, onNewEvent, onNewTask, onNewWo
 
         const pendingApprovalCount = tasks.filter(t => t.status === 'Submitted').length;
         // Mock 'issues' check: assuming tasks might have an 'hasIssue' flag or we count 'Blocked' status.
-        // For now, let's assume 'issues' means 'Blocked' or 'Submitted' (waiting on lead).
-        // User request: "approval has been requested or an issue has been raised"
-        // So: status === 'Submitted' OR status === 'Blocked' (if Blocked exists) OR hasIssue === true.
-        // I will add a check for 'Blocked' status if it exists in the data model, otherwise just Submitted + placeholder for issues.
-        const openIssuesCount = tasks.filter(t => t.status === 'Submitted' || t.status === 'Blocked' || t.hasIssue).length;
+        // Also include tasks with a Help Note or Rejection Note.
+        const openIssuesCount = tasks.filter(t => t.status === 'Submitted' || t.status === 'Blocked' || t.hasIssue || t.helpNote || t.rejectionNote).length;
 
         const isLeadOrOwner = currentUser.role === 'owner' || currentUser.role === 'lead';
 
@@ -44,15 +45,17 @@ const Dashboard = ({ onSelectEvent, onSelectTask, onNewEvent, onNewTask, onNewWo
                 value: activeEventsCount,
                 icon: Calendar,
                 colorName: 'purple',
+                unit: 'Events',
                 action: () => onNavigate('events', 'active')
             },
             {
-                id: 'overdue-tasks',
+                id: 'in-progress-tasks',
                 label: 'In Progress',
-                value: overdueCount,
+                value: inProgressCount,
                 icon: AlertCircle,
-                colorName: 'purple',
-                action: () => onNavigate('tasks', 'overdue')
+                colorName: 'blue',
+                unit: 'Tasks',
+                action: () => onNavigate('tasks', 'In Progress')
             },
             isLeadOrOwner ? {
                 id: 'open-issues',
@@ -60,6 +63,7 @@ const Dashboard = ({ onSelectEvent, onSelectTask, onNewEvent, onNewTask, onNewWo
                 value: openIssuesCount,
                 icon: Activity, // Using Activity icon for issues/action needed
                 colorName: 'red', // Red for attention
+                unit: 'Issues',
                 action: () => onNavigate('tasks', 'issues')
             } : {
                 id: 'worker-overdue',
@@ -67,6 +71,7 @@ const Dashboard = ({ onSelectEvent, onSelectTask, onNewEvent, onNewTask, onNewWo
                 value: overdueCount,
                 icon: AlertCircle,
                 colorName: 'red',
+                unit: 'Tasks',
                 action: () => onNavigate('tasks', 'overdue')
             },
             isLeadOrOwner ? {
@@ -75,6 +80,7 @@ const Dashboard = ({ onSelectEvent, onSelectTask, onNewEvent, onNewTask, onNewWo
                 value: overdueCount,
                 icon: AlertCircle,
                 colorName: 'red',
+                unit: 'Tasks',
                 action: () => onNavigate('tasks', 'overdue')
             } : {
                 id: 'upcoming-deadlines',
@@ -82,6 +88,7 @@ const Dashboard = ({ onSelectEvent, onSelectTask, onNewEvent, onNewTask, onNewWo
                 value: upcomingCount,
                 icon: Calendar,
                 colorName: 'orange',
+                unit: 'Tasks',
                 action: () => onNavigate('tasks', 'upcoming')
             }
         ];
@@ -90,7 +97,7 @@ const Dashboard = ({ onSelectEvent, onSelectTask, onNewEvent, onNewTask, onNewWo
     return (
         <div className="flex flex-col gap-8 animate-fade-in relative max-w-full overflow-x-hidden">
             {/* Background Blob/Blend */}
-            <div className="fixed top-0 left-0 right-0 h-[500px] bg-gradient-to-br from-indigo-50/80 via-purple-50/50 to-transparent -z-10 pointer-events-none" />
+            <div className="fixed top-0 left-0 right-0 h-[350px] bg-gradient-to-b from-indigo-50 via-purple-50/50 to-white -z-10 pointer-events-none" />
 
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -166,13 +173,28 @@ const Dashboard = ({ onSelectEvent, onSelectTask, onNewEvent, onNewTask, onNewWo
 
                 {/* Horizontal Scroll Container */}
                 <div className="flex overflow-x-auto gap-4 pb-4 scrollbar-hide snap-x snap-mandatory">
-                    {events.filter(e => e.status === 'Active').map(event => (
+                    {/* Render Active Weddings */}
+                    {weddings?.filter(w => w.status === 'Active' || w.status === 'Upcoming').map(wedding => {
+                        const weddingEvents = events.filter(e => e.weddingId && e.weddingId.toString() === wedding.id.toString());
+                        return (
+                            <div key={`w-${wedding.id}`} className="min-w-[300px] md:min-w-[400px] snap-center">
+                                <WeddingCard
+                                    wedding={wedding}
+                                    subEvents={weddingEvents}
+                                    onSelectEvent={onSelectEvent}
+                                />
+                            </div>
+                        );
+                    })}
+
+                    {/* Render Standalone Active Events */}
+                    {events.filter(e => e.status === 'Active' && !e.weddingId).map(event => (
                         <div key={event.id} className="min-w-[300px] md:min-w-[350px] snap-center">
                             <EventCard event={event} onClick={() => onSelectEvent(event)} />
                         </div>
                     ))}
 
-                    {events.filter(e => e.status === 'Active').length === 0 && (
+                    {(weddings?.filter(w => w.status === 'Active').length === 0 && events.filter(e => e.status === 'Active' && !e.weddingId).length === 0) && (
                         <div className="w-full text-center py-12 bg-white rounded-2xl border border-dashed border-gray-300">
                             <p className="text-gray-500">No active events currently.</p>
                             <button onClick={onNewEvent} className="text-primary-600 font-medium mt-2">Create one?</button>
