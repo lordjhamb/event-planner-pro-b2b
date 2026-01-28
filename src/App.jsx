@@ -17,10 +17,12 @@ import Calendar from './pages/Calendar';
 
 
 import Inventory from './pages/Inventory';
-import Finance from './pages/Finance'; // [NEW]
+import Finance from './pages/Finance';
 import Login from './pages/Login';
+import Signup from './pages/Signup';
+import Profile from './pages/Profile';
 
-// Components (for specific views like Event Detail)
+// Components
 import EventDetail from './components/events/EventDetail';
 
 // Modals
@@ -33,12 +35,13 @@ import WorkerDetailModal from './components/modals/WorkerDetailModal';
 import VendorDetailModal from './components/modals/VendorDetailModal';
 import FloatingActionButton from './components/common/FloatingActionButton';
 
-// Icon imports for menuItems (assuming these are from a library like 'lucide-react')
+// Icon imports
 import { LayoutDashboard, Calendar as CalendarIcon, CheckSquare, Users, ShoppingBag, DollarSign, BarChart3, Settings, Package } from 'lucide-react';
 
 
 const AppContent = () => {
   const { currentUser } = useAuth(); // Correctly get currentUser
+  const [authView, setAuthView] = useState('login'); // 'login' or 'signup'
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -48,8 +51,6 @@ const AppContent = () => {
 
   // Added state for mobile menu
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  // Sidebar menu items (added as per instruction)
 
   // Sidebar menu items (added as per instruction)
   const menuItems = [
@@ -77,9 +78,12 @@ const AppContent = () => {
   const [liveModeEvent, setLiveModeEvent] = useState(null);
   const [showNewWorkerModal, setShowNewWorkerModal] = useState(false);
 
-  // If no user, show Login (Must be AFTER all hooks)
+  // If no user, show Login/Signup (Must be AFTER all hooks)
   if (!currentUser) {
-    return <Login />;
+    if (authView === 'signup') {
+      return <Signup onNavigateLogin={() => setAuthView('login')} />;
+    }
+    return <Login onNavigateSignup={() => setAuthView('signup')} />;
   }
 
   // Handlers
@@ -119,6 +123,10 @@ const AppContent = () => {
         showNotifications={showNotifications}
         setShowNotifications={setShowNotifications}
         onMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        onNavigate={(tab) => {
+          setActiveTab(tab);
+          window.scrollTo(0, 0);
+        }}
       />
 
       {/* Mobile Sidebar Overlay */}
@@ -150,6 +158,7 @@ const AppContent = () => {
             onNavigate={handleNavigate}
           />
         )}
+        {activeTab === 'profile' && <Profile />}
         {activeTab === 'analytics' && <Analytics />}
         {activeTab === 'calendar' && <Calendar />}
         {activeTab === 'events' && (

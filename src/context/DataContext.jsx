@@ -36,7 +36,8 @@ export const DataProvider = ({ children }) => {
                     inventoryRes,
                     financeRes,
                     reqRes,
-                    tmplRes
+                    tmplRes,
+                    notifRes
                 ] = await Promise.all([
                     supabase.from('weddings').select('*').order('startDate', { ascending: true }),
                     supabase.from('events').select('*'),
@@ -45,7 +46,8 @@ export const DataProvider = ({ children }) => {
                     supabase.from('inventory_items').select('*'),
                     supabase.from('finance_transactions').select('*'),
                     supabase.from('task_inventory_requests').select('*'),
-                    supabase.from('wedding_templates').select('*')
+                    supabase.from('wedding_templates').select('*'),
+                    supabase.from('notifications').select('*').eq('recipientId', currentUser.id).order('created_at', { ascending: false })
                 ]);
 
                 if (weddingsRes.data) setWeddings(weddingsRes.data);
@@ -74,6 +76,7 @@ export const DataProvider = ({ children }) => {
                 if (financeRes.data) setFinance(financeRes.data);
                 if (reqRes.data) setInventoryRequests(reqRes.data);
                 if (tmplRes.data) setTemplates(tmplRes.data);
+                if (notifRes.data) setNotifications(notifRes.data);
 
             } catch (error) {
                 console.error("Supabase Sync Failed (Keeping Mocks):", error.message);
@@ -88,45 +91,76 @@ export const DataProvider = ({ children }) => {
     // Visibility Filtering Logic
     const filteredEvents = useMemo(() => {
         if (!currentUser) return [];
-        if (currentUser.role === 'owner') return events;
-
-        return events.filter(event => {
-            const isPrimary = event.primaryLeadId === currentUser.id;
-            const isDeptLead = event.departmentLeads?.some(dl => dl.leadId === currentUser.id);
-            const isWorker = event.workers?.includes(currentUser.id);
-            return isPrimary || isDeptLead || isWorker;
-        });
+        // [FIX] Everyone in the organization should see all events (per user request)
+        // Owner, Lead, and Worker all see the full event list to understand the timeline.
+        return events;
     }, [events, currentUser]);
 
     const filteredTasks = useMemo(() => {
         if (!currentUser) return [];
-        if (currentUser.role === 'owner') return tasks;
 
-        return tasks.filter(task => {
-            const event = events.find(e => e.id === task.eventId);
-            if (!event) return false;
+        // Owner AND Leads see all tasks
+        if (currentUser.role === 'owner' || currentUser.role === 'lead') return tasks;
 
-            if (event.primaryLeadId === currentUser.id) return true;
+        // Workers only see tasks assigned to them
+        // [FIX] Map the Auth User (UUID) to the Worker Entity (BigInt ID)
+        const currentWorker = workers.find(w => w.profile_id === currentUser.id);
+        const currentWorkerId = currentWorker ? currentWorker.id : null;
 
-            const deptLead = event.departmentLeads?.find(dl => dl.leadId === currentUser.id);
-            if (deptLead && deptLead.category === task.department) return true;
-
-            if (task.assignee === currentUser.id) return true;
-
-            return false;
-        });
-    }, [tasks, events, currentUser]);
+        return tasks.filter(task =>
+            // Match against Worker ID (primary check)
+            (currentWorkerId && task.assignee?.toString() === currentWorkerId.toString()) ||
+            // Fallback: Match against Auth ID just in case legacy data used UUIDs
+            (task.assignee === currentUser.id)
+        );
+    }, [tasks, currentUser, workers]);
 
     // --- Actions ---
 
-    const markNotificationRead = (notifId) => {
+    const markNotificationRead = async (notifId) => {
+        // Optimistic UI Update
         setNotifications(notifications.map(n =>
             n.id === notifId ? { ...n, read: true } : n
         ));
+
+        try {
+            await supabase.from('notifications').update({ read: true }).eq('id', notifId);
+        } catch (error) {
+            console.error("Error marking notification read:", error);
+        }
     };
 
-    const markAllNotificationsRead = () => {
+    const markAllNotificationsRead = async () => {
         setNotifications(notifications.map(n => ({ ...n, read: true })));
+        try {
+            await supabase.from('notifications').update({ read: true }).eq('recipientId', currentUser.id);
+        } catch (error) {
+            console.error("Error marking all read:", error);
+        }
+    };
+
+    const addNotification = async (notificationData) => {
+        try {
+            const { data, error } = await supabase
+                .from('notifications')
+                .insert([{
+                    organization_id: currentUser.organizationId,
+                    created_at: new Date(),
+                    read: false,
+                    ...notificationData
+                }])
+                .select()
+                .single();
+
+            if (error) throw error;
+            // Note: Realtime subscription would normally handle this, but for now we manually add it if it's for us
+            // Check if we are the recipient
+            if (data.recipientId === currentUser.id) {
+                setNotifications(prev => [data, ...prev]);
+            }
+        } catch (error) {
+            console.error("Error creating notification:", error);
+        }
     };
 
     // 1. Create Wedding with Sub-Events
@@ -418,9 +452,50 @@ export const DataProvider = ({ children }) => {
     };
 
     const updateTaskStatus = async (taskId, status) => {
+        // Find existing task to check previous status or details
+        const task = tasks.find(t => t.id === taskId);
+
         setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status } : t));
         if (!taskId.toString().startsWith('t-') && !taskId.toString().startsWith('temp-')) {
             await supabase.from('tasks').update({ status }).eq('id', taskId);
+
+            // --- Notification Logic ---
+            if (task) {
+                try {
+                    // Case 1: Worker Submits Task -> Notify Owner/Lead
+                    if (status === 'Submitted') {
+                        // Find Owner(s)
+                        const owners = workers.filter(w => w.role === 'owner' && w.profile_id); // Only those with profiles
+                        for (const owner of owners) {
+                            addNotification({
+                                recipientId: owner.profile_id,
+                                title: "Task Submitted",
+                                message: `Task "${task.title}" is ready for review.`,
+                                type: 'task',
+                                link: task.eventId ? `/events/${task.eventId}` : '/tasks',
+                                senderId: currentUser.id
+                            });
+                        }
+                    }
+
+                    // Case 2: Owner Approves Task -> Notify Worker
+                    else if (status === 'Approved') {
+                        const assignee = workers.find(w => w.id?.toString() === task.assignee?.toString());
+                        if (assignee?.profile_id) {
+                            addNotification({
+                                recipientId: assignee.profile_id,
+                                title: "Task Approved",
+                                message: `Great job! "${task.title}" has been approved.`,
+                                type: 'success',
+                                link: task.eventId ? `/events/${task.eventId}` : '/tasks',
+                                senderId: currentUser.id
+                            });
+                        }
+                    }
+                } catch (err) {
+                    console.error("Notification Trigger Failed:", err);
+                }
+            }
         }
     };
 
@@ -677,7 +752,8 @@ export const DataProvider = ({ children }) => {
         notifications,
         setNotifications,
         markNotificationRead,
-        markAllNotificationsRead
+        markAllNotificationsRead,
+        addNotification
     };
 
     return (

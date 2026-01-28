@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronRight, Calendar, MapPin, Award, FileText, DollarSign, Users, CheckSquare, Plus, AlertCircle, Briefcase, MessageSquare, Send, Trash, Package, Activity, Edit, ChevronDown, Check } from 'lucide-react';
+import { ChevronRight, Calendar, MapPin, Award, FileText, DollarSign, Users, CheckSquare, Plus, AlertCircle, Briefcase, MessageSquare, Send, Trash, Package, Activity, Edit, ChevronDown, Check, Play } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import TaskCard from '../tasks/TaskCard';
@@ -11,7 +11,7 @@ import LiveEventMode from '../live/LiveEventMode';
 
 const EventDetail = ({ event: propEvent, onBack, onSelectTask, onSelectWorker, onNewTask, onEnterLiveMode, onEditEvent, onSwitchEvent }) => {
     const { permissions, currentUser } = useAuth();
-    const { tasks, workers, deleteEvent, deleteWedding, finance, addFinanceTransaction, inventory, inventoryRequests, events, weddings } = useData();
+    const { tasks, workers, deleteEvent, deleteWedding, finance, addFinanceTransaction, inventory, inventoryRequests, events, weddings, updateTaskStatus } = useData();
     const [isFinanceModalOpen, setIsFinanceModalOpen] = useState(false);
     const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -829,11 +829,33 @@ const EventDetail = ({ event: propEvent, onBack, onSelectTask, onSelectWorker, o
                                                     onClick={() => onSelectTask(task)}
                                                 >
                                                     <div className="flex items-center gap-4">
-                                                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center ${task.status === 'Completed' || task.status === 'Approved' ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300'}`}>
-                                                            {(task.status === 'Completed' || task.status === 'Approved') && <CheckSquare size={12} />}
+                                                        {/* Action Button (Replacing Checkbox) */}
+                                                        <div className="mr-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                                            {task.status === 'Open' ? (
+                                                                <button
+                                                                    onClick={() => updateTaskStatus(task.id, 'In Progress')}
+                                                                    className="w-8 h-8 rounded-full bg-white border-2 border-blue-200 text-blue-400 hover:border-blue-500 hover:text-blue-500 hover:bg-blue-50 transition-all shadow-sm flex items-center justify-center p-0"
+                                                                    title="Start Task"
+                                                                >
+                                                                    <Play size={14} className="ml-0.5" />
+                                                                </button>
+                                                            ) : task.status === 'In Progress' ? (
+                                                                <button
+                                                                    onClick={() => updateTaskStatus(task.id, 'Submitted')}
+                                                                    className="w-8 h-8 rounded-full bg-white border-2 border-gray-300 text-gray-300 hover:border-green-500 hover:text-green-500 hover:bg-green-50 transition-all shadow-sm flex items-center justify-center p-0"
+                                                                    title="Mark as Done"
+                                                                >
+                                                                    <CheckSquare size={16} />
+                                                                </button>
+                                                            ) : (
+                                                                <div className="w-8 h-8 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center border border-gray-200">
+                                                                    {(task.status === 'Completed' || task.status === 'Approved') ? <CheckSquare size={16} className="text-green-500" /> : <CheckSquare size={16} />}
+                                                                </div>
+                                                            )}
                                                         </div>
+
                                                         <div>
-                                                            <div className="font-medium text-gray-900 group-hover:text-primary-700 transition-colors">{task.title}</div>
+                                                            <div className="text-sm font-bold text-gray-900 group-hover:text-primary-700 transition-colors">{task.title}</div>
                                                             <div className="text-xs text-gray-500 flex items-center gap-2">
                                                                 <span className={`w-2 h-2 rounded-full ${task.priority === 'High' ? 'bg-red-500' : task.priority === 'Medium' ? 'bg-yellow-500' : 'bg-blue-500'}`}></span>
                                                                 {task.priority} Priority • {task.category}
@@ -841,24 +863,25 @@ const EventDetail = ({ event: propEvent, onBack, onSelectTask, onSelectWorker, o
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-4">
-                                                        {task.assignedTo && (
-                                                            <div className="flex -space-x-2">
-                                                                {task.assignedTo.slice(0, 3).map((wId, i) => (
-                                                                    <div key={i} className="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-xs font-bold text-gray-600">
-                                                                        {workers.find(w => w.id === wId)?.name.charAt(0) || 'U'}
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        )}
-                                                        <div className={`px-3 py-1 rounded-full text-xs font-bold ${task.status === 'Completed' ? 'bg-green-100 text-green-700' :
-                                                            task.status === 'In Progress' ? 'bg-blue-100 text-blue-700' :
-                                                                task.status === 'Review' ? 'bg-purple-100 text-purple-700' :
+                                                        {/* Assigned To Name */}
+                                                        <div className="text-xs font-medium text-gray-500 max-w-[80px] truncate text-right">
+                                                            {(() => {
+                                                                const assignedWorker = workers.find(w => w.id?.toString() === task.assignee?.toString());
+                                                                return assignedWorker ? assignedWorker.name.split(' ')[0] : <span className="text-gray-300 italic">Unassigned</span>;
+                                                            })()}
+                                                        </div>
+
+                                                        {/* Status Badge */}
+                                                        <div className={`px-3 py-1 rounded-full text-xs font-bold ${task.status === 'Completed' || task.status === 'Approved' ? 'bg-green-100 text-green-700' :
+                                                            task.status === 'Submitted' ? 'bg-orange-100 text-orange-700' :
+                                                                task.status === 'In Progress' ? 'bg-blue-100 text-blue-700' :
                                                                     'bg-gray-100 text-gray-700'
                                                             }`}>
                                                             {task.status}
                                                         </div>
                                                     </div>
                                                 </div>
+
                                             ))}
                                         </div>
                                     </div>
@@ -872,31 +895,36 @@ const EventDetail = ({ event: propEvent, onBack, onSelectTask, onSelectWorker, o
                             )}
                         </div>
                     </div>
-                )}
+                )
+                }
 
-                {activeTab === 'timeline' && (
-                    <div className="bg-white rounded-3xl p-8 border border-gray-200 shadow-sm min-h-[400px] flex items-center justify-center animate-fade-in">
-                        <div className="text-center">
-                            <Calendar size={48} className="text-gray-300 mx-auto mb-4" />
-                            <h3 className="text-xl font-bold text-gray-900">Gantt Timeline</h3>
-                            <p className="text-gray-500">Visual timeline of all sub-events and milestones.</p>
-                            <span className="inline-block mt-4 px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-bold">Coming Soon</span>
+                {
+                    activeTab === 'timeline' && (
+                        <div className="bg-white rounded-3xl p-8 border border-gray-200 shadow-sm min-h-[400px] flex items-center justify-center animate-fade-in">
+                            <div className="text-center">
+                                <Calendar size={48} className="text-gray-300 mx-auto mb-4" />
+                                <h3 className="text-xl font-bold text-gray-900">Gantt Timeline</h3>
+                                <p className="text-gray-500">Visual timeline of all sub-events and milestones.</p>
+                                <span className="inline-block mt-4 px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-bold">Coming Soon</span>
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )
+                }
 
-                {activeTab === 'chat' && (
-                    <div className="bg-white md:rounded-3xl overflow-hidden border-y md:border border-gray-200 shadow-sm h-[calc(100vh-180px)] md:h-[calc(100vh-280px)] animate-fade-in p-0 -mx-4 md:mx-0 mb-20 md:mb-0">
-                        <ChatInterface
-                            currentUserId={currentUser?.id}
-                            eventId={event.id}
-                            eventName={event.name}
-                            height="h-full"
-                        />
-                    </div>
-                )}
+                {
+                    activeTab === 'chat' && (
+                        <div className="bg-white md:rounded-3xl overflow-hidden border-y md:border border-gray-200 shadow-sm h-[calc(100vh-180px)] md:h-[calc(100vh-280px)] animate-fade-in p-0 -mx-4 md:mx-0 mb-20 md:mb-0">
+                            <ChatInterface
+                                currentUserId={currentUser?.id}
+                                eventId={event.id}
+                                eventName={event.name}
+                                height="h-full"
+                            />
+                        </div>
+                    )
+                }
 
-            </div>
+            </div >
         );
     }
 
@@ -923,9 +951,9 @@ const EventDetail = ({ event: propEvent, onBack, onSelectTask, onSelectWorker, o
                             <div className="flex items-center gap-3 mb-2">
                                 <h2 className="text-3xl font-heading font-bold text-gray-900">{event.name}</h2>
                                 <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${event.status === 'Completed' ? 'bg-green-100 text-green-700' :
-                                        event.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
-                                            event.status === 'Upcoming' ? 'bg-blue-100 text-blue-700' :
-                                                'bg-green-100 text-green-700' // Active
+                                    event.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
+                                        event.status === 'Upcoming' ? 'bg-blue-100 text-blue-700' :
+                                            'bg-green-100 text-green-700' // Active
                                     }`}>
                                     {event.status || 'Active'}
                                 </span>

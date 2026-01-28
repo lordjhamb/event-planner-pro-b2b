@@ -49,7 +49,7 @@ const TaskDetailModal = ({ task, onClose, onSelectWorker, onSelectEvent, onEditT
 
     // Derived values with safety checks
     const event = events?.find(e => e.id === liveTask.eventId);
-    const worker = workers?.find(w => w.id === liveTask.assignee);
+    const worker = workers?.find(w => w.id?.toString() === liveTask.assignee?.toString());
     const vendor = vendors?.find(v => v.id === liveTask.vendorId);
 
     // Handler for inline inventory actions
@@ -195,7 +195,7 @@ const TaskDetailModal = ({ task, onClose, onSelectWorker, onSelectEvent, onEditT
                             </div>
                         </div>
                     )}
-                    {liveTask.rejectionNote && liveTask.status === 'Open' && (
+                    {liveTask.rejectionNote && (
                         <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-4 animate-pulse">
                             <div className="p-2 bg-red-100 rounded-lg text-red-600 shrink-0">
                                 <ShieldAlert size={24} />
@@ -232,17 +232,19 @@ const TaskDetailModal = ({ task, onClose, onSelectWorker, onSelectEvent, onEditT
                                         <span className="font-semibold w-24">Location:</span>
                                         <span>{liveTask.location || 'N/A'}</span>
                                     </div>
-                                    {worker && (
-                                        <div className="flex items-center gap-3 text-sm text-gray-700">
-                                            <Users size={18} className="text-gray-400" />
-                                            <span className="font-semibold w-24">Assignee:</span>
+                                    <div className="flex items-center gap-3 text-sm text-gray-700">
+                                        <Users size={18} className="text-gray-400" />
+                                        <span className="font-semibold w-24">Assignee:</span>
+                                        {worker ? (
                                             <div className="flex items-center gap-2">
                                                 <button onClick={() => onSelectWorker(worker)} className="text-primary-600 hover:underline font-medium">
                                                     {worker.name}
                                                 </button>
                                             </div>
-                                        </div>
-                                    )}
+                                        ) : (
+                                            <span className="text-gray-400 italic">Unassigned</span>
+                                        )}
+                                    </div>
                                     {/* Always show budget if it exists, OR if it's required */}
                                     {(liveTask.budget || liveTask.isBudgetRelated) && (
                                         <div className="flex items-center gap-3 text-sm text-gray-700">

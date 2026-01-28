@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckSquare, Users, Plus, Award, Calendar, DollarSign, ChevronRight, ArrowLeft, Settings } from 'lucide-react';
+import { X, CheckSquare, Users, Plus, Award, Calendar, IndianRupee, ChevronRight, ArrowLeft, Settings } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { WEDDING_TEMPLATES } from '../../data/weddingTemplates';
 
@@ -630,7 +630,7 @@ const NewEventModal = ({ isOpen, onClose, eventToEdit }) => {
                                                     </div>
                                                     <div>
                                                         <div className="flex items-center gap-1.5 bg-gray-50 px-3 py-2 rounded-lg border border-gray-100 focus-within:ring-2 focus-within:ring-primary-100 transition-all">
-                                                            <DollarSign size={14} className="text-gray-400" />
+                                                            <IndianRupee size={14} className="text-gray-400" />
                                                             <input
                                                                 type="number"
                                                                 placeholder="Budget"

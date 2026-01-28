@@ -3,7 +3,7 @@ import { Menu, Bell, Search, MessageSquare, LogOut, Settings, User, ChevronDown 
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 
-const Header = ({ showNotifications, setShowNotifications, onMenuToggle }) => {
+const Header = ({ showNotifications, setShowNotifications, onMenuToggle, onNavigate }) => {
     const { currentUser, logout } = useAuth();
     const { notifications } = useData();
     const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -100,7 +100,13 @@ const Header = ({ showNotifications, setShowNotifications, onMenuToggle }) => {
                                     <p className="text-xs text-gray-500 capitalize">{currentUser.role}</p>
                                 </div>
 
-                                <button className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                                <button
+                                    onClick={() => {
+                                        if (onNavigate) onNavigate('profile');
+                                        setShowProfileMenu(false);
+                                    }}
+                                    className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                                >
                                     <User size={16} className="text-gray-400" />
                                     My Profile
                                 </button>

@@ -3,38 +3,22 @@ import { X, Bell, CheckCircle2, AlertCircle, Clock, Calendar, ArrowRight } from 
 import { useData } from '../../context/DataContext';
 
 const NotificationsPanel = ({ showNotifications, setShowNotifications, setSelectedTask }) => {
-    const { tasks } = useData();
+    const { notifications, markNotificationRead } = useData();
 
-    // Mock notifications derived from tasks (usually this would be a separate data source)
-    const notifications = [
-        {
-            id: 1,
-            type: 'alert',
-            title: 'Task Overdue',
-            message: 'Setup Main Stage is overdue by 2 days',
-            time: '2 hours ago',
-            relatedTaskId: tasks.find(t => t.status === 'Overdue')?.id || 1,
-            read: false
-        },
-        {
-            id: 2,
-            type: 'success',
-            title: 'Task Approved',
-            message: 'Catering menu finalized has been approved by Rahul',
-            time: '5 hours ago',
-            relatedTaskId: 2,
-            read: false
-        },
-        {
-            id: 3,
-            type: 'info',
-            title: 'New Assignment',
-            message: 'You have been assigned to "Lighting Setup"',
-            time: '1 day ago',
-            relatedTaskId: 3,
-            read: true
-        }
-    ];
+    const formatTimeAgo = (dateString) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        const now = new Date();
+        const seconds = Math.floor((now - date) / 1000);
+
+        if (seconds < 60) return 'Just now';
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return `${minutes}m ago`;
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `${hours}h ago`;
+        const days = Math.floor(hours / 24);
+        return `${days}d ago`;
+    };
 
     return (
         <>
@@ -56,7 +40,7 @@ const NotificationsPanel = ({ showNotifications, setShowNotifications, setSelect
                                 <Bell className="text-primary-600" size={20} />
                                 Notifications
                             </h2>
-                            <p className="text-sm text-gray-500 mt-0.5">You have 2 unread messages</p>
+                            <p className="text-sm text-gray-500 mt-0.5">You have {notifications.filter(n => !n.read).length} unread messages</p>
                         </div>
                         <button
                             onClick={() => setShowNotifications(false)}
@@ -71,7 +55,14 @@ const NotificationsPanel = ({ showNotifications, setShowNotifications, setSelect
                         {notifications.map(notif => (
                             <div
                                 key={notif.id}
-                                className={`p-4 rounded-xl border transition-all ${notif.read
+                                onClick={() => {
+                                    if (!notif.read) markNotificationRead(notif.id);
+                                    if (notif.link) {
+                                        window.location.href = notif.link; // Simple navigation for now
+                                        setShowNotifications(false);
+                                    }
+                                }}
+                                className={`p-4 rounded-xl border transition-all cursor-pointer ${notif.read
                                     ? 'bg-white border-gray-100 opacity-75 hover:opacity-100'
                                     : 'bg-indigo-50/30 border-primary-100 shadow-sm'
                                     }`}
@@ -81,11 +72,10 @@ const NotificationsPanel = ({ showNotifications, setShowNotifications, setSelect
                                         notif.type === 'success' ? 'bg-green-100 text-green-600' :
                                             'bg-blue-100 text-blue-600'
                                         }`}>
-                                        {notif.type === 'approval' && <CheckSquare className="text-yellow-600" size={20} />}
-                                        {notif.type === 'overdue' && <AlertCircle className="text-red-600" size={20} />}
-                                        {notif.type === 'mention' && <MessageSquare className="text-blue-600" size={20} />}
-                                        {notif.type === 'vendor' && <Tag className="text-green-600" size={20} />}
-                                        {notif.type === 'update' && <Activity className="text-gray-600" size={20} />}
+                                        {notif.type === 'success' ? <CheckCircle2 size={16} /> :
+                                            notif.type === 'alert' ? <AlertCircle size={16} /> :
+                                                notif.type === 'task' ? <Clock size={16} /> :
+                                                    <Bell size={16} />}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-start justify-between gap-2">
@@ -93,7 +83,7 @@ const NotificationsPanel = ({ showNotifications, setShowNotifications, setSelect
                                             {!notif.read && <span className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0 mt-1" />}
                                         </div>
                                         <p className="text-sm text-gray-600 mt-1">{notif.message}</p>
-                                        <span className="text-xs text-gray-500 mt-2 block">{notif.time}</span>
+                                        <span className="text-xs text-gray-500 mt-2 block">{formatTimeAgo(notif.created_at)}</span>
                                     </div>
                                 </div>
                             </div>

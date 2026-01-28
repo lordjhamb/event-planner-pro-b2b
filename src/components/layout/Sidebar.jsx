@@ -49,7 +49,13 @@ const Sidebar = ({ activeTab, setActiveTab, setSelectedEvent, isOpen, onClose })
             </div>
 
             <div className="p-4 border-t border-gray-100">
-                <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer">
+                <div
+                    onClick={() => {
+                        setActiveTab('profile');
+                        if (onClose) onClose();
+                    }}
+                    className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer"
+                >
                     <div className="w-10 h-10 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center font-bold">
                         {currentUser.avatar}
                     </div>

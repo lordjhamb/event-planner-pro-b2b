@@ -48,7 +48,7 @@ const WorkerDetailModal = ({ worker, onClose, onSelectTask }) => {
                             </div>
                             <div className="flex items-center gap-3 text-sm text-gray-600">
                                 <Phone size={16} className="text-primary-500" />
-                                <span>{worker.phone || '+91 98765 43210'}</span>
+                                <span>{worker.phone || 'No phone'}</span>
                             </div>
                             <a
                                 href={createWhatsAppLink(worker.phone, `Hi ${worker.name}, `)}
