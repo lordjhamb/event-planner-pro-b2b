@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { supabase } from '../services/supabaseClient';
-import { Lock, Mail, User, Building, ArrowRight, ArrowLeft, CheckCircle } from 'lucide-react';
+import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
+import { Lock, Mail, User, Building, ArrowRight, ArrowLeft, CheckCircle, AlertTriangle } from 'lucide-react';
 
 const Signup = ({ onNavigateLogin }) => {
     const { login } = useAuth();
@@ -141,6 +141,18 @@ const Signup = ({ onNavigateLogin }) => {
 
                     <h1 className="text-2xl font-bold text-gray-900 mb-2">Create Account</h1>
                     <p className="text-gray-500 text-sm mb-6">Join your team or start a new workspace.</p>
+
+                    {!isSupabaseConfigured && (
+                        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs">
+                            <div className="flex items-center gap-2 font-semibold text-amber-900 mb-1">
+                                <AlertTriangle size={16} className="text-amber-600" />
+                                <span>Supabase Configuration Missing</span>
+                            </div>
+                            <p className="text-amber-700 leading-relaxed">
+                                Please add <strong>VITE_SUPABASE_URL</strong> and <strong>VITE_SUPABASE_ANON_KEY</strong> in your Vercel Project Settings &gt; Environment Variables, then redeploy.
+                            </p>
+                        </div>
+                    )}
 
                     {/* Mode Toggle */}
                     <div className="flex bg-gray-100 p-1 rounded-xl mb-6">

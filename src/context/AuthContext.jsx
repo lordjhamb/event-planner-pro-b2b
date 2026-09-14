@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
-import { supabase } from '../services/supabaseClient';
+import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 
 const AuthContext = createContext(null);
 
@@ -8,13 +8,28 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        if (!isSupabaseConfigured) {
+            setLoading(false);
+            return;
+        }
+
+        // Safety fallback so UI is never stuck in loading
+        const timer = setTimeout(() => {
+            setLoading(false);
+        }, 4000);
+
         // Check active session
         supabase.auth.getSession().then(({ data: { session } }) => {
+            clearTimeout(timer);
             if (session?.user) {
                 fetchProfile(session.user);
             } else {
                 setLoading(false);
             }
+        }).catch((err) => {
+            console.error("Auth session error:", err);
+            clearTimeout(timer);
+            setLoading(false);
         });
 
         // Listen for changes
@@ -27,7 +42,10 @@ export const AuthProvider = ({ children }) => {
             }
         });
 
-        return () => subscription.unsubscribe();
+        return () => {
+            clearTimeout(timer);
+            subscription?.unsubscribe?.();
+        };
     }, []);
 
     const fetchProfile = async (user) => {
@@ -148,12 +166,22 @@ export const AuthProvider = ({ children }) => {
         login,
         logout,
         permissions,
-        loading
+        loading,
+        isSupabaseConfigured
     };
 
     return (
         <AuthContext.Provider value={value}>
-            {!loading && children}
+            {loading ? (
+                <div className="flex min-h-screen items-center justify-center bg-gray-50">
+                    <div className="flex flex-col items-center gap-3">
+                        <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent"></div>
+                        <p className="text-sm font-medium text-gray-600">Loading EventFlow...</p>
+                    </div>
+                </div>
+            ) : (
+                children
+            )}
         </AuthContext.Provider>
     );
 };

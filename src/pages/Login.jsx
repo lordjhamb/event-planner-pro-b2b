@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { supabase } from '../services/supabaseClient';
-import { Lock, Mail, ArrowRight, UserCircle } from 'lucide-react';
+import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
+import { Lock, Mail, ArrowRight, UserCircle, AlertTriangle } from 'lucide-react';
 
 const Login = ({ onNavigateSignup }) => {
     const { login } = useAuth();
@@ -72,6 +72,18 @@ const Login = ({ onNavigateSignup }) => {
 
                 {/* Form */}
                 <div className="p-8">
+                    {!isSupabaseConfigured && (
+                        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs">
+                            <div className="flex items-center gap-2 font-semibold text-amber-900 mb-1">
+                                <AlertTriangle size={16} className="text-amber-600" />
+                                <span>Supabase Configuration Missing</span>
+                            </div>
+                            <p className="text-amber-700 leading-relaxed">
+                                Please add <strong>VITE_SUPABASE_URL</strong> and <strong>VITE_SUPABASE_ANON_KEY</strong> in your Vercel Project Settings &gt; Environment Variables, then redeploy.
+                            </p>
+                        </div>
+                    )}
+
                     <form onSubmit={handleSubmit} className="space-y-6">
                         {authMode !== 'otp_verify' && (
                             <div>
