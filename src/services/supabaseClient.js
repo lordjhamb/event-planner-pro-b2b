@@ -1,21 +1,28 @@
 import { createClient } from '@supabase/supabase-js';
 
-const rawUrl = import.meta.env.VITE_SUPABASE_URL;
-const rawAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Default Supabase configuration (Publishable keys safe for frontend client)
+const DEFAULT_SUPABASE_URL = 'https://jvfwjgkzgfnuegcclgrf.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_S6vRxatye1oIsIf0k1oSHQ_7m08GtvP';
+
+const supabaseUrl =
+    import.meta.env.VITE_SUPABASE_URL ||
+    import.meta.env.SUPABASE_URL ||
+    DEFAULT_SUPABASE_URL;
+
+const supabaseAnonKey =
+    import.meta.env.VITE_SUPABASE_ANON_KEY ||
+    import.meta.env.SUPABASE_ANON_KEY ||
+    DEFAULT_SUPABASE_ANON_KEY;
 
 export const isSupabaseConfigured = Boolean(
-    rawUrl &&
-    rawAnonKey &&
-    !rawUrl.includes('YOUR_SUPABASE') &&
-    rawUrl.startsWith('http')
+    supabaseUrl &&
+    supabaseAnonKey &&
+    !supabaseUrl.includes('YOUR_SUPABASE') &&
+    supabaseUrl.startsWith('http')
 );
 
 if (!isSupabaseConfigured) {
-    console.error('CRITICAL: Supabase environment variables (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY) are missing or invalid! Please add them in your Vercel Project Settings or .env file.');
+    console.warn('Supabase is not configured. Please check your Supabase URL and anon key.');
 }
-
-// Fallback to safe placeholders if env vars are missing so module loading doesn't throw a fatal exception
-const supabaseUrl = isSupabaseConfigured ? rawUrl : 'https://placeholder.supabase.co';
-const supabaseAnonKey = isSupabaseConfigured ? rawAnonKey : 'placeholder-anon-key';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
